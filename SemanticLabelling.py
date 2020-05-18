@@ -10,6 +10,7 @@ import random
 import cv2
 import os
 import time
+import json
 
 # construct the argument parse and parse the arguments
 ap = argparse.ArgumentParser()
@@ -41,7 +42,7 @@ ap.add_argument("-r", "--record", default="YES",
 	help="do we want to record a video?")
 args = vars(ap.parse_args())
 
-if not args["detectionMode"]=="" and not args["detectionMode"]=="sortLabels":
+if not args["detectionMode"]=="" and not args["detectionMode"]=="sortLabels" and not args["dertectionMode"]=="semanticMap":
 	print("[INFO] detectionMode uncorrect, for now, only default and sortLabels exist")
 	exit()
 if not args["videoType"]=="normal" and not args["videoType"]=="flip" and not args["videoType"]=="stereo" and not args["videoType"]=="flipStereo" and not args["videoType"]=="lightSensorStereo":
@@ -122,6 +123,7 @@ if args["detectionMode"]=="sortLabels":
 	print("[INFO] Create dir:", output+"/plantROI")
 	
 	
+classes = [person,bicycle,car,motorcycle,airplane,bus,train,truck,boat,traffic light,fire hydrant,stop sign,parking meter,bench,bird,cat,dog,horse,sheep,cow,elephant,bear,zebra,giraffe,backpack,umbrella,handbag,tie,suitcase,frisbee,skis,snowboard,sports ball,kite,baseball bat,baseball glove,skateboard,surfboard,tennis racket,bottle,wine glass,cup,fork,knife,spoon,bowl,banana,apple,sandwich,orange,broccoli,carrot,hot dog,pizza,donut,cake,chair,couch,potted plant,bed,dining table,toilet,tv,laptop,mouse,remote,keyboard,cell phone,microwave,oven,toaster,sink,refrigerator,book]
 videoWriter = None
 treshold = float(args["treshold"])
 nbFrame = 0
@@ -235,6 +237,8 @@ while True:
 	chairCpt=0
 	tableCpt=0
 	plantCpt=0
+	data = {}
+	data['detection'] = []
 	# loop over of the detected object's bounding boxes and masks
 	for i in range(0, r["rois"].shape[0]):
 		# extract the class ID and mask for the current detection, then
@@ -280,7 +284,23 @@ while True:
 					tableCpt+=1
 				if classID==1 or classID==57 or classID==59 or classID==61:
 					frameResize = visualize.apply_mask(frameResize, mask, color, alpha=0.5)
-	
+			if args["detectionMode"]=="semanticMap":
+				frameResize = visualize.apply_mask(frameResize, mask, color, alpha=0.5)
+				
+				(startY, startX, endY, endX) = r["rois"][i]
+				data['detection'].append({
+					'classe': classes[classID],
+					'startX': startX,
+					'startY': startY,
+					'endX': endX,
+					'endY': endY,
+					'confidence': score
+				})
+				
+	if args["detectionMode"]=="semanticMap":
+		with open(output+"/"+args["camera"]+"_"+format(nbFrame, '0>5')+".txt", 'w') as outJSON:
+			json.dump(data, outJSON)
+		
 	# convert the image back to BGR so we can use OpenCV's drawing
 	# functions
 	frame = imutils.resize(frameResize, W)
