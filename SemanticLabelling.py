@@ -42,7 +42,7 @@ ap.add_argument("-r", "--record", default="YES",
 	help="do we want to record a video?")
 args = vars(ap.parse_args())
 
-if not args["detectionMode"]=="" and not args["detectionMode"]=="sortLabels" and not args["dertectionMode"]=="semanticMap":
+if not args["detectionMode"]=="" and not args["detectionMode"]=="sortLabels" and not args["detectionMode"]=="semanticMap":
 	print("[INFO] detectionMode uncorrect, for now, only default and sortLabels exist")
 	exit()
 if not args["videoType"]=="normal" and not args["videoType"]=="flip" and not args["videoType"]=="stereo" and not args["videoType"]=="flipStereo" and not args["videoType"]=="lightSensorStereo":
@@ -123,7 +123,7 @@ if args["detectionMode"]=="sortLabels":
 	print("[INFO] Create dir:", output+"/plantROI")
 	
 	
-classes = [person,bicycle,car,motorcycle,airplane,bus,train,truck,boat,traffic light,fire hydrant,stop sign,parking meter,bench,bird,cat,dog,horse,sheep,cow,elephant,bear,zebra,giraffe,backpack,umbrella,handbag,tie,suitcase,frisbee,skis,snowboard,sports ball,kite,baseball bat,baseball glove,skateboard,surfboard,tennis racket,bottle,wine glass,cup,fork,knife,spoon,bowl,banana,apple,sandwich,orange,broccoli,carrot,hot dog,pizza,donut,cake,chair,couch,potted plant,bed,dining table,toilet,tv,laptop,mouse,remote,keyboard,cell phone,microwave,oven,toaster,sink,refrigerator,book]
+classes = ["zero","person","bicycle","car","motorcycle","airplane","bus","train","truck","boat","traffic light","fire hydrant","stop sign","parking meter","bench","bird","cat","dog","horse","sheep","cow","elephant","bear","zebra","giraffe","backpack","umbrella","handbag","tie","suitcase","frisbee","skis","snowboard","sports ball","kite","baseball bat","baseball glove","skateboard","surfboard","tennis racket","bottle","wine glass","cup","fork","knife","spoon","bowl","banana","apple","sandwich","orange","broccoli","carrot","hot dog","pizza","donut","cake","chair","couch","potted plant","bed","dining table","toilet","tv","laptop","mouse","remote","keyboard","cell phone","microwave","oven","toaster","sink","refrigerator","book", "clock","vase","scissors","teddy bear","hair drier","toothbrush"]
 videoWriter = None
 treshold = float(args["treshold"])
 nbFrame = 0
@@ -225,7 +225,7 @@ while True:
 		if videoWriter is None:
 			fourcc = cv2.VideoWriter_fourcc(*"FFV1")
 			videoWriter = cv2.VideoWriter(outputVideo, fourcc, 4, (frame.shape[1], frame.shape[0]), True)
-		print("[INFO]  Start to record video:",outputVideo)
+			print("[INFO]  Start to record video:",outputVideo)
 							
 	frameResize = imutils.resize(frame, int(W/2))	
 				
@@ -239,6 +239,14 @@ while True:
 	plantCpt=0
 	data = {}
 	data['detection'] = []
+	#data['detection'] = [{
+	#	'classe': 'string',
+	#	'startX': 'integer',
+	#	'startY': 'integer',
+	#	'endX': 'integer',
+	#	'endY': 'integer',
+	#	'confidence': 'string'
+	#}]
 	# loop over of the detected object's bounding boxes and masks
 	for i in range(0, r["rois"].shape[0]):
 		# extract the class ID and mask for the current detection, then
@@ -286,19 +294,20 @@ while True:
 					frameResize = visualize.apply_mask(frameResize, mask, color, alpha=0.5)
 			if args["detectionMode"]=="semanticMap":
 				frameResize = visualize.apply_mask(frameResize, mask, color, alpha=0.5)
-				
 				(startY, startX, endY, endX) = r["rois"][i]
+				print("[INFO] classe:{}, confidence: {}".format(classes[classID], "%.3f" % score))
 				data['detection'].append({
 					'classe': classes[classID],
-					'startX': startX,
-					'startY': startY,
-					'endX': endX,
-					'endY': endY,
-					'confidence': score
+					'startX': int(startX),
+					'startY': int(startY),
+					'endX': int(endX),
+					'endY': int(endY),
+					'confidence': "%.3f" % score
 				})
 				
 	if args["detectionMode"]=="semanticMap":
 		with open(output+"/"+args["camera"]+"_"+format(nbFrame, '0>5')+".txt", 'w') as outJSON:
+			#outJSON.write(json.dumps(data,encoding='UTF-8',default=str))
 			json.dump(data, outJSON)
 		
 	# convert the image back to BGR so we can use OpenCV's drawing
